@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Image Renamer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #2c3e50;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            color: #7f8c8d;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            font-size: 1.4em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-zone {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #2980b9;
+            background: #ecf0f1;
+        }
+
+        .upload-zone input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #7f8c8d;
+            font-size: 1em;
+        }
+
+        .upload-text strong {
+            display: block;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .file-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .preview-item {
+            position: relative;
+            background: #ecf0f1;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 1;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-item-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            font-size: 0.75em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .options-section {
+            margin-top: 30px;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .option-group label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .option-group input,
+        .option-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 0.95em;
+            transition: border-color 0.3s ease;
+        }
+
+        .option-group input:focus,
+        .option-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            color: #7f8c8d;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            border-color: #3498db;
+            background: #3498db;
+            color: white;
+        }
+
+        .mode-btn:hover {
+            border-color: #3498db;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: block;
+        }
+
+        .preview-table thead {
+            position: sticky;
+            top: 0;
+        }
+
+        .preview-table th {
+            background: #34495e;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .preview-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 0.9em;
+        }
+
+        .preview-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .preview-table tr:hover {
+            background: #ecf0f1;
+        }
+
+        .arrow {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .file-count {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="header">
+                <h1>Bulk Image Renamer</h1>
+                <p>Upload images and rename them with multiple options</p>
+            </div>
+
+            <div class="main-grid">
+                <div class="card">
+                    <h2>📤 Upload Images</h2>
+                    <div class="upload-zone" id="uploadZone">
+                        <input type="file" id="fileInput" multiple accept="image/*">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">
+                            <strong>Drop images here or click to select</strong>
+                            Supported: JPG, PNG, GIF, BMP, WEBP, TIFF, SVG
+                        </div>
+                    </div>
+                    <div class="file-preview" id="filePreview"></div>
+                </div>
+
+                <div class="card">
+                    <h2>⚙️ Options</h2>
+                    <div class="options-section">
+                        <div class="option-group">
+                            <label>Renaming Mode</label>
+                            <div class="mode-selector">
+                                <button class="mode-btn active" data-mode="sequential">Sequential</button>
+                                <button class="mode-btn" data-mode="date">By Date</button>
+                                <button class="mode-btn" data-mode="clean">Clean</button>
+                                <button class="mode-btn" data-mode="custom">Custom</button>
+                            </div>
+                        </div>
+
+                        <div class="option-group">
+                            <label>Pattern</label>
+                            <input type="text" id="pattern" value="product" placeholder="e.g., product, image, photo">
+                        </div>
+
+                        <div class="option-group">
+                            <label>Prefix</label>
+                            <input type="text" id="prefix" placeholder="Optional prefix (e.g., shop_)">
+                        </div>
+
+                        <div class="option-group">
+                            <label>Suffix</label>
+                            <input type="text" id="suffix" placeholder="Optional suffix (e.g., _v1)">
+                        </div>
+
+                        <div class="option-group">
+                            <label>Start Number</label>
+                            <input type="number" id="startNumber" value="1" min="1">
+                        </div>
+
+                        <div class="option-group" id="customPatternGroup" style="display: none;">
+                            <label>Custom Pattern</label>
+                            <input type="text" id="customPattern" placeholder="e.g., item_{n}_photo{ext}">
+                        </div>
+
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="previewBtn">👁️ Preview</button>
+                            <button class="btn btn-success" id="executeBtn">✓ Execute</button>
+                        </div>
+
+                        <div class="status" id="status"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📋 Preview <span class="file-count" id="fileCount">0 files</span></h2>
+                <table class="preview-table" id="previewTable">
+                    <thead>
+                        <tr>
+                            <th>Original Name</th>
+                            <th></th>
+                            <th>New Name</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewBody">
+                        <tr><td colspan="3" style="text-align: center; color: #95a5a6;">Upload images to see preview</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let files = [];
+        let currentMode = 'sequential';
+        let previewData = [];
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const filePreview = document.getElementById('filePreview');
+        const previewBtn = document.getElementById('previewBtn');
+        const executeBtn = document.getElementById('executeBtn');
+        const previewTable = document.getElementById('previewTable');
+        const previewBody = document.getElementById('previewBody');
+        const fileCount = document.getElementById('fileCount');
+        const status = document.getElementById('status');
+
+        const patternInput = document.getElementById('pattern');
+        const prefixInput = document.getElementById('prefix');
+        const suffixInput = document.getElementById('suffix');
+        const startNumberInput = document.getElementById('startNumber');
+        const customPatternInput = document.getElementById('customPattern');
+        const customPatternGroup = document.getElementById('customPatternGroup');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode;
+                customPatternGroup.style.display = currentMode === 'custom' ? 'block' : 'none';
+            });
+        });
+
+        previewBtn.addEventListener('click', generatePreview);
+        executeBtn.addEventListener('click', executeRename);
+
+        function handleFiles(fileList) {
+            files = Array.from(fileList).filter(f => /\.(jpg|jpeg|png|gif|bmp|webp|tiff|svg)$/i.test(f.name));
+            updatePreview();
+            generatePreview();
+        }
+
+        function updatePreview() {
+            filePreview.innerHTML = files.map(f => `
+                <div class="preview-item">
+                    <img src="${URL.createObjectURL(f)}" alt="${f.name}">
+                    <div class="preview-item-name">${f.name}</div>
+                </div>
+            `).join('');
+            fileCount.textContent = `${files.length} files`;
+        }
+
+        function generatePreview() {
+            if (files.length === 0) {
+                showStatus('Please upload images first', 'error');
+                return;
+            }
+
+            const options = {
+                mode: currentMode,
+                pattern: patternInput.value || 'product',
+                prefix: prefixInput.value,
+                suffix: suffixInput.value,
+                startNumber: parseInt(startNumberInput.value) || 1,
+                customPattern: customPatternInput.value
+            };
+
+            previewData = files.map((file, index) => ({
+                original: file.name,
+                new: generateNewName(file, index, options)
+            }));
+
+            updatePreviewTable();
+            showStatus(`Preview ready for ${files.length} files`, 'info');
+        }
+
+        function generateNewName(file, index, options) {
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            const num = String(options.startNumber + index).padStart(3, '0');
+
+            switch(options.mode) {
+                case 'sequential':
+                    return `${options.prefix}${options.pattern}_${num}${options.suffix}${ext}`;
+                case 'date':
+                    return `${options.prefix}${options.pattern}_${num}${options.suffix}${ext}`;
+                case 'custom':
+                    return options.customPattern.replace('{n}', num).replace('{ext}', ext);
+                case 'clean':
+                    let clean = file.name.replace(/[^\w\s.-]/g, '').replace(/[-\s]+/g, '_').toLowerCase();
+                    clean = clean.replace(/\.{2,}/g, '.');
+                    return clean;
+                default:
+                    return file.name;
+            }
+        }
+
+        function updatePreviewTable() {
+            previewBody.innerHTML = previewData.map(item => `
+                <tr>
+                    <td>${item.original}</td>
+                    <td class="arrow">→</td>
+                    <td><strong>${item.new}</strong></td>
+                </tr>
+            `).join('');
+        }
+
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status show ${type}`;
+        }
+
+        async function executeRename() {
+            if (previewData.length === 0) {
+                showStatus('Generate preview first', 'error');
+                return;
+            }
+
+            executeBtn.disabled = true;
+            executeBtn.innerHTML = '<span class="spinner"></span> Processing...';
+
+            try {
+                const formData = new FormData();
+                files.forEach(file => formData.append('files', file));
+                formData.append('preview', JSON.stringify(previewData));
+
+                const response = await fetch('/api/rename', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus(`✓ Successfully renamed ${result.count} files!`, 'success');
+                    setTimeout(() => {
+                        files = [];
+                        previewData = [];
+                        filePreview.innerHTML = '';
+                        previewBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #95a5a6;">Upload images to see preview</td></tr>';
+                        fileCount.textContent = '0 files';
+                        fileInput.value = '';
+                    }, 2000);
+                } else {
+                    showStatus(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                executeBtn.disabled = false;
+                executeBtn.innerHTML = '✓ Execute';
+            }
+        }
+
+        generatePreview();
+    </script>
+</body>
+</html>
